@@ -21,16 +21,10 @@ def image_to_text(img_dir):
 
 def imgs_to_text(dir_path):
     documents = []
-    kqkd_list = []
-    kqkd_ids = []
-    for id, img_path in enumerate(sorted_alphanumeric(os.listdir(dir_path))):
+    for img_path in sorted_alphanumeric(os.listdir(dir_path)):
         print(img_path)
         path = os.path.join(dir_path, img_path)
         txt = image_to_text(path)
-        lower_txt = txt.lower()
         documents.append(txt)
-        if ("báo cáo kết quả hoạt động kinh doanh" in lower_txt):
-            kqkd_list.append(txt)
-            kqkd_ids.append(id)
 
-    return documents, kqkd_list, kqkd_ids
+    return documents

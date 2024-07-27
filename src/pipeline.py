@@ -11,13 +11,25 @@ from haystack_integrations.components.generators.google_ai import GoogleAIGemini
 from src.relevant_docs import CustomDocumentStore
 
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyAAAR-c4ahbKgIZmRv-6zBUZWWAyJrEHqI"
-TEMPLATE = """
-"""
+class DefineKey:
+    def __init__(self):
+        self.key_list = ["AIzaSyAAAR-c4ahbKgIZmRv-6zBUZWWAyJrEHqI",
+                         "AIzaSyA6VHGEzZIkfAvO8fPZJjeY5eo9WFwWpWQ"]
+        self.idx = 0
+
+    def change(self):
+        if self.idx == 0:
+            self.idx = 1
+        else:
+            self.idx = 0
+        os.environ["GOOGLE_API_KEY"] = self.key_list[self.idx]
 
 
 class RAGPipeline:
-    def __init__(self, documents: List[str], prompt_template: str):
+    def __init__(self,
+                 documents: List[str],
+                 reference_docs: List[str],
+                 prompt_template: str):
         # Create document store and embedder
         self.document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
         formatted_docs = [Document(content=doc, meta={"index": i}) for i, doc in enumerate(documents)]
@@ -29,9 +41,9 @@ class RAGPipeline:
 
         # Pipeline components
         self.text_embedder = SentenceTransformersTextEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
-        self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store)
-        self.custom_document_store = CustomDocumentStore(documents)
-        self.prompt_builder = PromptBuilder(template=prompt_template)
+        self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store, top_k=1)
+        self.custom_document_store = CustomDocumentStore(documents, reference_docs)
+        self.prompt_builder = PromptBuilder(template=prompt_template)   # template should contain {query} and {context}
         self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
 
         # Create pipeline
@@ -45,30 +57,33 @@ class RAGPipeline:
         # Connect components together
         self.pipeline.connect("text_embedder", "retriever.query_embedding")
         self.pipeline.connect("retriever", "custom_document_store")
-        self.pipeline.connect("custom_document_store", "prompt_builder.query")
+        self.pipeline.connect("custom_document_store", "prompt_builder.context")
         self.pipeline.connect("prompt_builder", "llm")
 
     def run(self, query: str) -> str:
         return self.pipeline.run({
             "text_embedder": {
                 "text": query
+            },
+            "prompt_builder": {
+                "query": query
             }
         })['llm']['replies'][0]
 
 
-class InfoExtractor:
+class LLMPipeline:
     def __init__(self, template: str):
         self.pipeline = Pipeline()
         self.prompt_builder = PromptBuilder(template=template)
         self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
-        
+
         self.pipeline.add_component("prompt_builder", self.prompt_builder)
         self.pipeline.add_component("llm", self.generator)
         self.pipeline.connect("prompt_builder", "llm")
 
     def run(self, query: str) -> str:
         return self.pipeline.run({
-            "prompt_buider": {
+            "prompt_builder": {
                 "query": query
             }
         })['llm']['replies'][0]
