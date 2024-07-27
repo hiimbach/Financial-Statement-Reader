@@ -1,0 +1,7 @@
+pdf2image
+pytesseract
+pillow
+haystack-ai==2.2.0
+google-ai-haystack==1.1.0
+streamlit
+tqdm
