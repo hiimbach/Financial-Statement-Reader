@@ -143,6 +143,7 @@ Remember to answer the question based on the context, do not add any new informa
 The answer should be a part of the context, so the user can know where the answer is from.
 The output should be in JSON format, with two keys "answer" and "source". The "answer" key contains the answer to the 
 question, while the "source" key contains the part of the context that the answer is from.
+The output should be load by only call json.loads(output) in Python.
 
 ====== EXAMPLE OUTPUT START ======
 {
@@ -220,6 +221,7 @@ class FinStateRead:
     def run(self, query: str) -> str:
         print("Running RAG pipeline...")
         rag_output = self.rag_pipeline.run(query)
+        print(rag_output)
 
         return rag_output
 
