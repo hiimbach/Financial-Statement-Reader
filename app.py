@@ -17,12 +17,21 @@ if st.checkbox("Demo mode"):
     with open('documents.pkl', 'rb') as file:
         docs = pickle.load(file)
 
+    # Download the PDF file here
+    with open('sample.pdf', 'rb') as file:
+        btn = st.download_button(
+            label="Download Sample File",
+            data=file,
+            file_name='sample.pdf',
+            mime='text/plain'
+        )
+
     reader = FinStateRead(pdf_img_dir='not important anymore',
-                                  format_prompt=FORMAT_PROMPT,
-                                  summary_prompt=SUMMARIZE_PROMPT,
-                                  rag_prompt=RAG_PROMPT,
-                                  pre_ref_docs=ref_docs,
-                                  pre_docs=docs)
+                          format_prompt=FORMAT_PROMPT,
+                          summary_prompt=SUMMARIZE_PROMPT,
+                          rag_prompt=RAG_PROMPT,
+                          pre_ref_docs=ref_docs,
+                          pre_docs=docs)
     start = True
 else:
     # Upload the PDF file
