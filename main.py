@@ -1,8 +1,8 @@
 import json
 from time import sleep
-
+import os
 from src.pipeline import RAGPipeline, LLMPipeline, DefineKey
-from src.pdf_ocr import imgs_to_text
+from src.pdf_ocr import imgs_to_text, pdf_to_image
 from tqdm import tqdm
 import pickle
 
@@ -183,10 +183,12 @@ class FinStateRead:
         else:
             # Cache the documents not to OCR next time
             print("Converting images to text")
-            # documents = imgs_to_text(pdf_img_dir)
+            pdf_to_image(pdf_img_dir,os.path.dirname(pdf_img_dir))
+            image_path = pdf_img_dir[:-4]
+            documents = imgs_to_text(image_path)
 
-            # with open('my_list.json', 'w') as f:
-            #     json.dump(documents, f)
+            with open('my_list.json', 'w') as f:
+                json.dump(documents, f)
 
             with open('my_list.json', 'r') as f:
                 documents = json.load(f)

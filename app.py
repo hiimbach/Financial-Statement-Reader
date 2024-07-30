@@ -34,7 +34,7 @@ else:
 
         # Split the PDF into images
 
-        reader = FinStateRead(pdf_img_dir='',
+        reader = FinStateRead(pdf_img_dir=uploaded_file.name,
                               format_prompt=FORMAT_PROMPT,
                               summary_prompt=SUMMARIZE_PROMPT,
                               rag_prompt=RAG_PROMPT)
