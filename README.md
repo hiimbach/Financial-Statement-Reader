@@ -1,9 +1,10 @@
 # Financial Statement Reader
-
-## About the Project
 Financial Statement Chatbot is a Retrieval-Augmented Generation (RAG) system designed to interact with financial 
 statement data. This project leverages OCR, summarization, and embedding techniques to enable users to query and 
-retrieve information from financial statements effectively. Key features include:
+retrieve information from financial statements effectively.
+
+## About the Project
+Key features include:
 
 - Converting PDF OCR files to JSON using Tesseract.
 - Summarizing PDFs for efficient data retrieval.
