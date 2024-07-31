@@ -6,7 +6,6 @@ from src.pdf_ocr import imgs_to_text, pdf_to_image
 from tqdm import tqdm
 import pickle
 
-
 FORMAT_PROMPT = """
 Given the following context, format all the tables in it into json format with the instruction below:
 1. First look for financial information in the text and then extracted them into json.
@@ -22,7 +21,8 @@ Do NOT create duplicate entities
 Never input missing values
 The values with brackets e.g "(123.123)" should be kept the same in the json, do not add brakets to values that does not have it
 Property name should be enclosed in double quotes
-If the property is the final property in a list, DO NOT add comma after it. It can causes errors
+If the property is the final property in a list, DO NOT add comma after it. It can causes errors.
+IF THE KEY IS NONE, USE "" INSTEAD OF REMOVING IT.
 
 3. The output should be load by only call json.loads(output)
 4. You can ignore the header and footer if there are  
@@ -30,6 +30,9 @@ If the property is the final property in a list, DO NOT add comma after it. It c
 6. You dont need to include ====== OUTPUT START ====== and ====== OUTPUT END ====== in the output
 7. Try to find as many tables as possible. But dont forget to add the remaining text as a new key.
 8. The input is the OCR version of a PDF, so if there is meaningless words, replace it with suitable words.
+9. If the text is like "549.730.301.393 1.305.277.451.910 1.442.461.944.861 (16.497.636.631) 13.052.962.004. 
+409.101.133.815\nThuế thu nhập doanh nghiệp 598.765.348.179 389.755.423.988 633.330.715.962 (2.901.254.393) (2.946.446.793) 349.342.355.019\nThuế thu nhập cá nhân 183.608.172.208 663.289.450.522 753.923.384.625 (2.182.443.164) 1.915.980.150 92.707.775.093\nThuế khác và các khoản phải nộp khác 23.847.698.165 73.302.063.276 79.049.493.343æ"
+Many numbers in a row with no explanation, it seems like a table. You should format it as a table with the key "Table".
 
 ====== EXAMPLE CONTEXT START ======
 Table cookie sale price:
@@ -144,10 +147,11 @@ The answer should be a part of the context, so the user can know where the answe
 The output should be in JSON format, with two keys "answer" and "source". The "answer" key contains the answer to the 
 question, while the "source" key contains the part of the context that the answer is from.
 The output should be load by only call json.loads(output) in Python.
+* If the query ask about returning money, only return the number
 
 ====== EXAMPLE OUTPUT START ======
 {
-    "answer": "The company's revenue in the last quarter was $1.2 million.",
+    "answer": "$1.2 million",
     "source": "FPT records $1.2 million in revenue for the last quarter."
 }
 ====== EXAMPLE OUTPUT END ======
@@ -183,12 +187,15 @@ class FinStateRead:
         else:
             # Cache the documents not to OCR next time
             print("Converting images to text")
-            pdf_to_image(pdf_img_dir,os.path.dirname(pdf_img_dir))
-            image_path = pdf_img_dir[:-4]
-            documents = imgs_to_text(image_path)
+            # if pdf_img_dir[-4:] == '.pdf':
+            #     pdf_to_image(pdf_img_dir, 'img_folder')
+            #     image_path = pdf_img_dir[:-4]
+            #     documents = imgs_to_text(os.path.join('img_folder', image_path))
+            # else:
+            #     documents = imgs_to_text(pdf_img_dir)
 
-            with open('my_list.json', 'w') as f:
-                json.dump(documents, f)
+            # with open('my_list.json', 'w') as f:
+            #     json.dump(documents, f)
 
             with open('my_list.json', 'r') as f:
                 documents = json.load(f)
@@ -206,12 +213,18 @@ class FinStateRead:
                 self.ref_docs.append(self.info_extractor.run(doc))
                 sleep(2)
 
+            with open('ref_docs2.pkl', 'wb') as f:
+                pickle.dump(self.ref_docs, f)
+
             print("Summarize docs...")
             self.documents = []
-            for doc in tqdm(self.ref_docs):
+            for doc in tqdm(documents):
                 self.def_key.change()
                 self.documents.append(self.summarizer.run(doc))
-                sleep(2)
+                sleep(3)
+
+            with open('docs2.pkl', 'wb') as f:
+                pickle.dump(self.documents , f)
 
         # Init rag pipeline
         print("Init RAG pipeline...")
@@ -233,14 +246,37 @@ if __name__ == "__main__":
     with open('ref_docs.pkl', 'rb') as file:
         ref_docs = pickle.load(file)
 
-    with open('documents.pkl', 'rb') as file:
+    with open('docs.pkl', 'rb') as file:
         docs = pickle.load(file)
 
-    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/is/sample',
+    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/sample',
                                   format_prompt=FORMAT_PROMPT,
                                   summary_prompt=SUMMARIZE_PROMPT,
                                   rag_prompt=RAG_PROMPT,
                                   pre_ref_docs=ref_docs,
                                   pre_docs=docs)
-    res = fin_state_read.run("What is the profit and revenue of the company in the last quarter?")
-    import ipdb; ipdb.set_trace()
+
+    cate_list = []
+    with open('cate2.txt', 'r') as f:
+        cate_list = f.readlines()
+
+    results = {}
+    define_key = DefineKey()
+    for cate in cate_list:
+        sleep(2)
+        define_key.change()
+        response = fin_state_read.run(f"What is the {cate} of the company in the last quarter?")
+        try:
+            answer = json.loads(response)['answer']
+        except:
+            answer = response
+        results[cate] = answer
+
+    print(results)
+
+    with open('result.json', 'w') as f:
+        json.dump(results, f, indent=4)
+
+    import ipdb;
+
+    ipdb.set_trace()
