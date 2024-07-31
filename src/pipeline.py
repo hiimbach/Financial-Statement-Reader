@@ -41,7 +41,7 @@ class RAGPipeline:
 
         # Pipeline components
         self.text_embedder = SentenceTransformersTextEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
-        self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store, top_k=1)
+        self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store, top_k=2)
         self.custom_document_store = CustomDocumentStore(documents, reference_docs)
         self.prompt_builder = PromptBuilder(template=prompt_template)   # template should contain {query} and {context}
         self.generator = GoogleAIGeminiGenerator(model='gemini-pro')

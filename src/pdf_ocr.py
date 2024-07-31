@@ -10,7 +10,7 @@ os.environ["GOOGLE_API_KEY"] = "AIzaSyAAAR-c4ahbKgIZmRv-6zBUZWWAyJrEHqI"
 
 def sorted_alphanumeric(data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(data, key=alphanum_key)
 
 
@@ -30,16 +30,25 @@ def imgs_to_text(dir_path):
     return documents
 
 
-
 def pdf_to_image(pdf_path, output_dir):
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
     print("the path is: ", pdf_path)
     images = convert_from_path(pdf_path)
-    
-    if(not os.path.exists(os.path.join(output_dir, os.path.basename(pdf_path)[:-4]))):
-        os.mkdir(os.path.join(output_dir, os.path.basename(pdf_path)[:-4]))
+    pdf_file_name = os.path.basename(pdf_path)[:-4]
 
+    import ipdb; ipdb.set_trace()
+    if not os.path.exists(os.path.join(output_dir, pdf_file_name)):
+        os.mkdir(os.path.join(output_dir, pdf_file_name))
+
+    import ipdb; ipdb.set_trace()
     for i in range(len(images)):
-
         # Save pages as images in the pdf
-        if(not os.path.exists(os.path.join(output_dir, os.path.basename(pdf_path)[:-4] ,'page'+ str(i) +'.jpg'))):
-            images[i].save(os.path.join(output_dir, os.path.basename(pdf_path)[:-4] ,'page'+ str(i) +'.jpg'), 'JPEG')
+        page_name = 'page' + str(i) + '.jpg'
+        if not os.path.exists(os.path.join(output_dir, pdf_file_name, page_name)):
+            images[i].save(os.path.join(output_dir, pdf_file_name, page_name),
+                           'JPEG')
+
+
+if __name__ == "__main__":
+    pdf_to_image("/Users/bachle/Main/Code/Projects/fin_state_read/quy2_fpt_bctc.pdf", "img_folder")
