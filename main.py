@@ -193,7 +193,7 @@ class FinStateRead:
             print("Converting images to text")
             if pdf_img_dir[-4:] == '.pdf':
                 pdf_to_image(pdf_img_dir, 'img_folder')
-                image_path = pdf_img_dir[:-4]
+                image_path = pdf_img_dir[:-4].split('/')[-1]
                 documents = imgs_to_text(os.path.join('img_folder', image_path))
             else:
                 documents = imgs_to_text(pdf_img_dir)
@@ -281,7 +281,3 @@ if __name__ == "__main__":
 
     with open('result.json', 'w') as f:
         json.dump(results, f, indent=4)
-
-    import ipdb;
-
-    ipdb.set_trace()
