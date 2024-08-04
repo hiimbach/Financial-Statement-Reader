@@ -17,22 +17,24 @@ The input is OCR from a financial statement PDF.
 The list after the key Table represents columns, and the keys in column lists are for rows representation
 If there are texts between tables, represents them as a part of the json, with the key "text"
 
-Do NOT create duplicate entities
-Never input missing values
-The values with brackets e.g "(123.123)" should be kept the same in the json, do not add brakets to values that does not have it
-Property name should be enclosed in double quotes
-If the property is the final property in a list, DO NOT add comma after it. It can causes errors.
-IF THE KEY IS NONE, USE "" INSTEAD OF REMOVING IT.
+- Do NOT create duplicate entities
+- Never input missing values
+- The values with brackets e.g "(123.123)" should be kept the same in the json, do not add brakets to values that 
+does not have it
+- Property name should be enclosed in double quotes
+- If the property is the final property in a list, DO NOT add comma after it. It can causes errors.
+- IF THE KEY IS NONE, USE "" INSTEAD OF REMOVING IT.
+- If the text is like "549.730.301.393 1.305.277.451.910 1.442.461.944.861 (16.497.636.631) 13.052.962.004 (Many 
+numbers in a row with no explanation), it seems like a table. You should format it as a table with the key "Table".
 
 3. The output should be load by only call json.loads(output)
 4. You can ignore the header and footer if there are  
-5. If there is a mixture of text and table, format the json as the example below
+5. If there is a mixture of text and table, format the json as the example below (put all text as a key after tables)
 6. You dont need to include ====== OUTPUT START ====== and ====== OUTPUT END ====== in the output
 7. Try to find as many tables as possible. But dont forget to add the remaining text as a new key.
 8. The input is the OCR version of a PDF, so if there is meaningless words, replace it with suitable words.
-9. If the text is like "549.730.301.393 1.305.277.451.910 1.442.461.944.861 (16.497.636.631) 13.052.962.004. 
-409.101.133.815\nThuế thu nhập doanh nghiệp 598.765.348.179 389.755.423.988 633.330.715.962 (2.901.254.393) (2.946.446.793) 349.342.355.019\nThuế thu nhập cá nhân 183.608.172.208 663.289.450.522 753.923.384.625 (2.182.443.164) 1.915.980.150 92.707.775.093\nThuế khác và các khoản phải nộp khác 23.847.698.165 73.302.063.276 79.049.493.343æ"
-Many numbers in a row with no explanation, it seems like a table. You should format it as a table with the key "Table".
+For example ChênhiệhChuyểnđối can be "Chênh lệch Chuyển đổi". 
+
 
 ====== EXAMPLE CONTEXT START ======
 Table cookie sale price:
@@ -42,12 +44,14 @@ Snacks          5.000                       1.000
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent fringilla eros sed nisl ultrices blandit. 
 Interdum et malesuada fames ac ante ipsum primis in faucibus. Sed ac mauris non odio aliquam aliquam nec non nisl. 
-Mauris luctus lorem at euismod vehicula. Proin ligula justo, pellentesque eu orci in, laoreet dictum mauris
+Mauris luctus lorem at euismod vehicula. 
 
 Table profit and sold product:
          2023               2024
 Profit   2.2                2.7
 Sold     2002               3421
+          30                 72 
+Proin ligula justo, pellentesque eu orci in, laoreet dictum mauris
 
 ====== EXAMPLE CONTEXT END ======
 
@@ -57,13 +61,13 @@ Sold     2002               3421
         "Sale from 12/6 to 12/9": {"Cookie":"10.000", "Snacks":"5.000"}, 
         "Sale from 12/9 to 12/12": {"Cookie":"2.000"}, "Snacks":"1.000"}
     },
+    "Table profit and sold product": {
+        "2023": {"Profit":"2.2", "Sold":"2002", "":"30"},
+        "2024": {"Profit":"2.7", "Sold":"3421", "":"72"}
+    },
     "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent fringilla eros sed nisl ultrices blandit. 
             Interdum et malesuada fames ac ante ipsum primis in faucibus. Sed ac mauris non odio aliquam aliquam nec non nisl. 
             Mauris luctus lorem at euismod vehicula. Proin ligula justo, pellentesque eu orci in, laoreet dictum mauris"
-    "Table profit and sold product": {
-        "2023": {"Profit":"2.2", "Sold":"2002"},
-        "2024": {"Profit":"2.7", "Sold":"3421"}
-    }
 }}
 ====== EXAMPLE OUTPUT END ======
 
@@ -213,7 +217,7 @@ class FinStateRead:
                 self.ref_docs.append(self.info_extractor.run(doc))
                 sleep(2)
 
-            with open('ref_docs2.pkl', 'wb') as f:
+            with open('ref_docs_c12.pkl', 'wb') as f:
                 pickle.dump(self.ref_docs, f)
 
             print("Summarize docs...")
@@ -223,7 +227,7 @@ class FinStateRead:
                 self.documents.append(self.summarizer.run(doc))
                 sleep(3)
 
-            with open('docs2.pkl', 'wb') as f:
+            with open('docs_c12.pkl', 'wb') as f:
                 pickle.dump(self.documents , f)
 
         # Init rag pipeline
@@ -243,18 +247,19 @@ class FinStateRead:
 
 if __name__ == "__main__":
     # Use ref_docs and docs from previous run
-    with open('ref_docs.pkl', 'rb') as file:
-        ref_docs = pickle.load(file)
+    # with open('ref_docs.pkl', 'rb') as file:
+    #     ref_docs = pickle.load(file)
+    #
+    # with open('docs.pkl', 'rb') as file:
+    #     docs = pickle.load(file)
 
-    with open('docs.pkl', 'rb') as file:
-        docs = pickle.load(file)
-
-    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/sample',
+    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/C12_18CN_BCTC_KT.pdf',
                                   format_prompt=FORMAT_PROMPT,
                                   summary_prompt=SUMMARIZE_PROMPT,
                                   rag_prompt=RAG_PROMPT,
-                                  pre_ref_docs=ref_docs,
-                                  pre_docs=docs)
+                                  )
+                                  # pre_ref_docs=ref_docs,
+                                  # pre_docs=docs)
 
     cate_list = []
     with open('cate2.txt', 'r') as f:
