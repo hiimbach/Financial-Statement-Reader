@@ -14,7 +14,7 @@ if st.checkbox("Demo mode"):
     with open('ref_docs.pkl', 'rb') as file:
         ref_docs = pickle.load(file)
 
-    with open('documents.pkl', 'rb') as file:
+    with open('docs.pkl', 'rb') as file:
         docs = pickle.load(file)
 
     # Download the PDF file here
