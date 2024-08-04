@@ -269,10 +269,10 @@ class FinStateRead:
 
 if __name__ == "__main__":
     # Use ref_docs and docs from previous run
-    with open('ref_docs_c12.pkl', 'rb') as file:
+    with open('ref_docs_openai.pkl', 'rb') as file:
         ref_docs = pickle.load(file)
 
-    with open('docs_c12.pkl', 'rb') as file:
+    with open('docs_openai.pkl', 'rb') as file:
         docs = pickle.load(file)
 
     fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/img_folder/quy2_fpt_bctc',

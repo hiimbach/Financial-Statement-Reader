@@ -11,10 +11,10 @@ reader = None
 # Demo option
 if st.checkbox("Demo mode"):
     # Use ref_docs and docs from previous run
-    with open('ref_docs.pkl', 'rb') as file:
+    with open('ref_docs_openai.pkl', 'rb') as file:
         ref_docs = pickle.load(file)
 
-    with open('docs.pkl', 'rb') as file:
+    with open('docs_openai.pkl', 'rb') as file:
         docs = pickle.load(file)
 
     # Download the PDF file here
