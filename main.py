@@ -29,7 +29,9 @@ numbers in a row with no explanation), it seems like a table. You should format 
 
 3. The output should be load by only call json.loads(output)
 4. You can ignore the header and footer if there are  
-5. If there is a mixture of text and table, format the json as the example below (put all text as a key after tables)
+5. If there is a mixture of text and table, format the json as the example below. The information in the table will not
+be included in the text key, and the information in the text key will not be included in the table. All text should
+be put after the table key. Please dont input the same information in both text and table.
 6. You dont need to include ====== OUTPUT START ====== and ====== OUTPUT END ====== in the output
 7. Try to find as many tables as possible. But dont forget to add the remaining text as a new key.
 8. The input is the OCR version of a PDF, so if there is meaningless words, replace it with suitable words.
@@ -85,6 +87,8 @@ the main content of different pages without reading all of them.
 
 These summaries will be used in RAG system as a embeded document. The output should be a string start by "this 
 section" or "this page" and then provide a short summary of the section.
+
+Headers should be included. Rows and Columns of tabes must be mentioned.
 
 ====== EXAMPLE CONTEXT START ======
 CÔNG TY CỔ PHẦN FPT
@@ -150,6 +154,8 @@ Remember to answer the question based on the context, do not add any new informa
 The answer should be a part of the context, so the user can know where the answer is from.
 The output should be in JSON format, with two keys "answer" and "source". The "answer" key contains the answer to the 
 question, while the "source" key contains the part of the context that the answer is from.
+The source is just a piece of information indicates the result, not the whole context.
+
 The output should be load by only call json.loads(output) in Python.
 * If the query ask about returning money, only return the number
 
@@ -175,13 +181,14 @@ class FinStateRead:
                  format_prompt: str,
                  summary_prompt: str,
                  rag_prompt: str,
+                 pre_ocred=None,
                  pre_ref_docs=None,
-                 pre_docs=None):
-        # If there is pre_ref_docs, there must be pre_docs
-        if pre_ref_docs is not None:
-            assert pre_docs is not None, "pre_docs must be provided if pre_ref_docs is provided"
-        if pre_docs is not None:
-            assert pre_ref_docs is not None, "pre_ref_docs must be provided if pre_docs is provided"
+                 pre_docs=None,
+                 save_ocred_path=None,
+                 save_ref_docs_path=None,
+                 save_docs_path=None,
+                 azure_openai_key=None,
+                 ):
 
         # Use pre_ref_docs and pre_docs if provided
         if pre_ref_docs is not None:
@@ -191,44 +198,59 @@ class FinStateRead:
         else:
             # Cache the documents not to OCR next time
             print("Converting images to text")
-            if pdf_img_dir[-4:] == '.pdf':
-                pdf_to_image(pdf_img_dir, 'img_folder')
-                image_path = pdf_img_dir[:-4].split('/')[-1]
-                documents = imgs_to_text(os.path.join('img_folder', image_path))
+            if pre_ocred:
+                documents = pre_ocred
+
             else:
-                documents = imgs_to_text(pdf_img_dir)
+                if pdf_img_dir[-4:] == '.pdf':
+                    pdf_to_image(pdf_img_dir, 'img_folder')
+                    image_path = pdf_img_dir[:-4].split('/')[-1]
+                    documents = imgs_to_text(os.path.join('img_folder', image_path))
+                else:
+                    documents = imgs_to_text(pdf_img_dir)
 
-            with open('my_list.json', 'w') as f:
-                json.dump(documents, f)
-
-            # with open('my_list.json', 'r') as f:
-            #     documents = json.load(f)
+            # Save ocred documents
+            if save_ocred_path:
+                with open(save_ocred_path, 'wb') as f:
+                    pickle.dump(documents, f)
 
             # Init extractor and summarizer
             print("Init pipelines...")
             self.def_key = DefineKey()
-            self.info_extractor = LLMPipeline(format_prompt)
-            self.summarizer = LLMPipeline(summary_prompt)
+            self.info_extractor = LLMPipeline(format_prompt, azure_openai_key)
+            self.summarizer = LLMPipeline(summary_prompt, azure_openai_key)
 
+            # Reference documents
             print("Convert docs into json format...")
-            self.ref_docs = []
-            for doc in tqdm(documents):
-                self.def_key.change()
-                self.ref_docs.append(self.info_extractor.run(doc))
-                sleep(2)
+            if pre_ref_docs:
+                self.ref_docs = pre_ref_docs
+            else:
+                self.ref_docs = []
+                for doc in tqdm(documents):
+                    self.def_key.change()
+                    self.ref_docs.append(self.info_extractor.run(doc))
+                    sleep(2)
 
-            with open('ref_docs_c12.pkl', 'wb') as f:
-                pickle.dump(self.ref_docs, f)
+            # Save ref document
+            if save_ref_docs_path:
+                with open(save_ref_docs_path, 'wb') as f:
+                    pickle.dump(self.ref_docs, f)
 
+            # Summarized Documents
             print("Summarize docs...")
-            self.documents = []
-            for doc in tqdm(documents):
-                self.def_key.change()
-                self.documents.append(self.summarizer.run(doc))
-                sleep(3)
+            if pre_docs:
+                self.documents = pre_docs
+            else:
+                self.documents = []
+                for doc in tqdm(self.ref_docs):
+                    self.def_key.change()
+                    self.documents.append(self.summarizer.run(doc))
+                    sleep(3)
 
-            with open('docs_c12.pkl', 'wb') as f:
-                pickle.dump(self.documents , f)
+            # Save docs
+            if save_docs_path:
+                with open(save_docs_path, 'wb') as f:
+                    pickle.dump(self.documents, f)
 
         # Init rag pipeline
         print("Init RAG pipeline...")
@@ -247,28 +269,27 @@ class FinStateRead:
 
 if __name__ == "__main__":
     # Use ref_docs and docs from previous run
-    # with open('ref_docs.pkl', 'rb') as file:
-    #     ref_docs = pickle.load(file)
-    #
-    # with open('docs.pkl', 'rb') as file:
-    #     docs = pickle.load(file)
+    with open('ref_docs_c12.pkl', 'rb') as file:
+        ref_docs = pickle.load(file)
 
-    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/C12_18CN_BCTC_KT.pdf',
+    with open('docs_c12.pkl', 'rb') as file:
+        docs = pickle.load(file)
+
+    fin_state_read = FinStateRead(pdf_img_dir='/Users/bachle/Main/Code/Projects/fin_state_read/img_folder/quy2_fpt_bctc',
                                   format_prompt=FORMAT_PROMPT,
                                   summary_prompt=SUMMARIZE_PROMPT,
                                   rag_prompt=RAG_PROMPT,
+                                  pre_ref_docs=ref_docs,
+                                  pre_docs=docs
                                   )
-                                  # pre_ref_docs=ref_docs,
-                                  # pre_docs=docs)
 
-    cate_list = []
-    with open('cate2.txt', 'r') as f:
+    with open('categories.txt', 'r') as f:
         cate_list = f.readlines()
 
     results = {}
     define_key = DefineKey()
     for cate in cate_list:
-        sleep(2)
+        # Change API key to avoid Gemini API limit
         define_key.change()
         response = fin_state_read.run(f"What is the {cate} of the company in the last quarter?")
         try:
@@ -276,6 +297,9 @@ if __name__ == "__main__":
         except:
             answer = response
         results[cate] = answer
+
+        # Sleep to avoid API limit
+        sleep(5)
 
     print(results)
 
