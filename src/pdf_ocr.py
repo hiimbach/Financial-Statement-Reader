@@ -37,11 +37,9 @@ def pdf_to_image(pdf_path, output_dir):
     images = convert_from_path(pdf_path)
     pdf_file_name = os.path.basename(pdf_path)[:-4]
 
-    import ipdb; ipdb.set_trace()
     if not os.path.exists(os.path.join(output_dir, pdf_file_name)):
         os.mkdir(os.path.join(output_dir, pdf_file_name))
 
-    import ipdb; ipdb.set_trace()
     for i in range(len(images)):
         # Save pages as images in the pdf
         page_name = 'page' + str(i) + '.jpg'

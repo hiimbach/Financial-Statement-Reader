@@ -82,8 +82,11 @@ class LLMPipeline:
         self.pipeline.connect("prompt_builder", "llm")
 
     def run(self, query: str) -> str:
-        return self.pipeline.run({
-            "prompt_builder": {
-                "query": query
-            }
-        })['llm']['replies'][0]
+        try:
+            return self.pipeline.run({
+                "prompt_builder": {
+                    "query": query
+                }
+            })['llm']['replies'][0]
+        except:
+            return ""
