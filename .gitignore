@@ -1,4 +1,7 @@
 # Byte-compiled / optimized / DLL files
+img_folder/
+
+
 __pycache__/
 *.py[cod]
 *$py.class
