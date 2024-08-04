@@ -16,6 +16,7 @@ class DefineKey:
         self.key_list = ["AIzaSyAAAR-c4ahbKgIZmRv-6zBUZWWAyJrEHqI",
                          "AIzaSyA6VHGEzZIkfAvO8fPZJjeY5eo9WFwWpWQ"]
         self.idx = 0
+        os.environ["GOOGLE_API_KEY"] = self.key_list[self.idx]
 
     def change(self):
         if self.idx == 0:
@@ -34,13 +35,15 @@ class RAGPipeline:
         self.document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
         formatted_docs = [Document(content=doc, meta={"index": i}) for i, doc in enumerate(documents)]
 
-        self.document_embedder = SentenceTransformersDocumentEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
+        # model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        model_name = 'BAAI/bge-m3'
+        self.document_embedder = SentenceTransformersDocumentEmbedder(model=model_name)
         self.document_embedder.warm_up()
         documents_with_embeddings = self.document_embedder.run(formatted_docs)["documents"]
         self.document_store.write_documents(documents_with_embeddings)
 
         # Pipeline components
-        self.text_embedder = SentenceTransformersTextEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
+        self.text_embedder = SentenceTransformersTextEmbedder(model=model_name)
         self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store, top_k=2)
         self.custom_document_store = CustomDocumentStore(documents, reference_docs)
         self.prompt_builder = PromptBuilder(template=prompt_template)   # template should contain {query} and {context}
@@ -72,10 +75,18 @@ class RAGPipeline:
 
 
 class LLMPipeline:
-    def __init__(self, template: str):
+    def __init__(self,
+                 template: str,
+                 azure_openai_key=None):
         self.pipeline = Pipeline()
         self.prompt_builder = PromptBuilder(template=template)
-        self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
+        if azure_openai_key:
+            # HOANG OI MODIFY THIS PART NHE
+            os.environ["OPENAI_API_KEY"] = azure_openai_key
+            self.generator = GoogleAIGeminiGenerator(model='gemini-pro', azure_openai_key=azure_openai_key)
+
+        else:
+            self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
 
         self.pipeline.add_component("prompt_builder", self.prompt_builder)
         self.pipeline.add_component("llm", self.generator)
