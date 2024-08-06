@@ -254,6 +254,7 @@ class FinStateRead:
 
         # Init rag pipeline
         print("Init RAG pipeline...")
+        self.def_key = DefineKey()
         self.rag_pipeline = RAGPipeline(self.documents,
                                         self.ref_docs,
                                         rag_prompt)
