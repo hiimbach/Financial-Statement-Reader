@@ -11,6 +11,17 @@ Key features include:
 - Utilizing sentence-transformers/all-MiniLM-L6-v2 as an embedder for RAG.
 - A user-friendly interface built with Streamlit.
 
+## Quick Start with Docker
+Run the following command to build the Docker image:
+```
+docker build -t finread . 
+```
+
+Run the following command to start the Docker container:
+```
+docker run -p 8501:8501 finread
+```
+
 ## Installation
 Run the following commands to install the required packages:
 
