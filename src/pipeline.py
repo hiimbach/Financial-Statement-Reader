@@ -7,6 +7,8 @@ from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.embedders import SentenceTransformersDocumentEmbedder, SentenceTransformersTextEmbedder
 from haystack.components.retrievers import InMemoryEmbeddingRetriever
 from haystack_integrations.components.generators.google_ai import GoogleAIGeminiGenerator
+from haystack.components.embedders import AzureOpenAITextEmbedder, AzureOpenAIDocumentEmbedder
+from haystack.components.generators import AzureOpenAIGenerator
 
 from src.relevant_docs import CustomDocumentStore
 
@@ -17,7 +19,7 @@ class DefineKey:
                          "AIzaSyA6VHGEzZIkfAvO8fPZJjeY5eo9WFwWpWQ"]
         self.idx = 0
         os.environ["GOOGLE_API_KEY"] = self.key_list[self.idx]
-
+        os.environ["AZURE_OPENAI_API_KEY"] = "add yours"
     def change(self):
         if self.idx == 0:
             self.idx = 1
@@ -47,7 +49,8 @@ class RAGPipeline:
         self.retriever = InMemoryEmbeddingRetriever(document_store=self.document_store, top_k=2)
         self.custom_document_store = CustomDocumentStore(documents, reference_docs)
         self.prompt_builder = PromptBuilder(template=prompt_template)   # template should contain {query} and {context}
-        self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
+        self.generator = AzureOpenAIGenerator(azure_endpoint="to be added", azure_deployment="to be added")
+        
 
         # Create pipeline
         self.pipeline = Pipeline()
@@ -82,9 +85,8 @@ class LLMPipeline:
         self.prompt_builder = PromptBuilder(template=template)
         if azure_openai_key:
             # HOANG OI MODIFY THIS PART NHE
-            os.environ["OPENAI_API_KEY"] = azure_openai_key
-            self.generator = GoogleAIGeminiGenerator(model='gemini-pro', azure_openai_key=azure_openai_key)
-
+            self.generator = AzureOpenAIGenerator(azure_endpoint="to be added", azure_deployment="to be added")
+        
         else:
             self.generator = GoogleAIGeminiGenerator(model='gemini-pro')
 
